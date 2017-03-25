@@ -7,9 +7,9 @@
 */
 Application::Application() :
   cameraPosition(10, 5, 0),
-  cameraLookAt(0, 0, 0),
-  cameraDistance(15),
-  cameraPitch(20),
+  cameraLookAt(0, 10, 0),
+  cameraDistance(75),
+  cameraPitch(0),
   cameraYaw(0),
   cameraUp(0,1,0),
   nearPlane(1),
@@ -101,7 +101,7 @@ Application::idle()
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   float t = clock.getTimeMilliseconds();
-  clock.reset();
+  //clock.reset();
   updateScene(t/1000.0);
 
   updateCamera();
@@ -149,9 +149,6 @@ Application::updateCamera()
   btVector3 right = cameraUp.cross(front);
   btQuaternion rotationPitch(right, -pitch);
   cameraPosition = btMatrix3x3(rotationYaw) * btMatrix3x3(rotationPitch) * newCameraPosition;
-  /*cameraPosition[0] = newCameraPosition.getX();
-  cameraPosition[1] = newCameraPosition.getY();
-  cameraPosition[2] = newCameraPosition.getZ();*/
   cameraPosition += cameraLookAt;
   gluLookAt(cameraPosition[0], cameraPosition[1], cameraPosition[2],
             cameraLookAt[0],cameraLookAt[1], cameraLookAt[2],
@@ -260,6 +257,7 @@ void
 Application::updateScene(float t)
 {
   if(world) {
+    updateConstraint(t);
     world->stepSimulation(t);
   }
 }
@@ -277,6 +275,7 @@ Application::initializePhysics()
   world = new btDiscreteDynamicsWorld(dispatcher, broadPhase, solver, collisionConfiguration);
 
   createObjects();
+  enforceConstraint();
 }
 
 /*
@@ -291,11 +290,11 @@ Application::createObjects()
 
   // object 1
   createObject(new btBoxShape(btVector3(1,1,1)), 1,
-               btVector3(1, 0.2, 0.2), btVector3(0, 10, 0));
+               btVector3(1, 0.2, 0.2), btVector3(-40, 30, 0));
 
   // object 2
   createObject(new btBoxShape(btVector3(1,1,1)), 1,
-               btVector3(0, 0.2, 0.8), btVector3(1.35, 20, 0));
+               btVector3(0, 0.2, 0.8), btVector3(40, 30, 0));
 
 
 }
@@ -316,4 +315,61 @@ Application::createObject(btCollisionShape * shape, const float & mass,
     world->addRigidBody(object->getRigidBody());
   }
   return object;
+}
+
+/*
+  >----------- Add constraint on a object at a position -------<
+*/
+void
+Application::addConstraint(Object * object, btVector3 position)
+{
+  if(!world) return;
+  btRigidBody * rigidBody = object->getRigidBody();
+  rigidBody->setActivationState(DISABLE_DEACTIVATION);
+
+  // get position of constraint in local coordinate frame
+  btVector3 localPosition = rigidBody->getCenterOfMassTransform().inverse() * position;
+  btTransform transform;
+  transform.setIdentity();
+  transform.setOrigin(localPosition);
+
+  // setup constraint
+  btGeneric6DofConstraint * constraint = new btGeneric6DofConstraint(*rigidBody, transform, true);
+  world->addConstraint(constraint, true);
+
+  // define constraint parameters
+  float strength = 0.9;
+  constraint->setParam(BT_CONSTRAINT_STOP_CFM, strength, 0);
+  constraint->setParam(BT_CONSTRAINT_STOP_CFM, strength, 1);
+  constraint->setParam(BT_CONSTRAINT_STOP_CFM, strength, 2);
+  constraint->setParam(BT_CONSTRAINT_STOP_CFM, strength, 3);
+  constraint->setParam(BT_CONSTRAINT_STOP_CFM, strength, 4);
+  constraint->setParam(BT_CONSTRAINT_STOP_CFM, strength, 5);
+
+  float erp = 0.5;
+  constraint->setParam(BT_CONSTRAINT_STOP_ERP, erp, 0);
+  constraint->setParam(BT_CONSTRAINT_STOP_ERP, erp, 1);
+  constraint->setParam(BT_CONSTRAINT_STOP_ERP, erp, 2);
+  constraint->setParam(BT_CONSTRAINT_STOP_ERP, erp, 3);
+  constraint->setParam(BT_CONSTRAINT_STOP_ERP, erp, 4);
+  constraint->setParam(BT_CONSTRAINT_STOP_ERP, erp, 5);
+
+  //
+
+  constraints.push_back(constraint);
+}
+
+void
+Application::updateConstraint(float t)
+{
+  // if (t > 2 && t < 2.05)
+  //   constraints[0]->getFrameOffsetA().setOrigin(btVector3(0,10,0));
+}
+
+void
+Application::enforceConstraint()
+{
+  //addConstraint(objects[1], btVector3(0,50,0));
+  objects[1]->getRigidBody()->setLinearVelocity(btVector3(10, 30, 0));
+  objects[2]->getRigidBody()->setLinearVelocity(btVector3(-10, 30, 0));
 }

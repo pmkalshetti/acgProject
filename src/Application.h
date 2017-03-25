@@ -4,10 +4,12 @@
 #include "GL/freeglut.h"
 #include "bullet/btBulletDynamicsCommon.h"
 #include "Object.h"
+#include <iostream>
 #include <vector>
 using namespace std;
 
 typedef vector<Object *> Objects;
+typedef vector<btGeneric6DofConstraint *> Constraints;
 
 class Application {
 
@@ -73,8 +75,9 @@ private:
   btDynamicsWorld * world;
 
   // Physics Engine components
-  Objects objects;
   btClock clock;
+  Objects objects;
+  Constraints constraints;
 
 public:
   // initialize physics engine
@@ -88,6 +91,15 @@ public:
                     const btVector3 & color = btVector3(1,1,1),
                     const btVector3 & initialPosition = btVector3(0,0,0),
                     const btQuaternion & initialRotation = btQuaternion(0,0,1,1));
+
+  // add constraint
+  void addConstraint(Object * object, btVector3 position);
+
+  // update constraint
+  void updateConstraint(float t);
+
+  // enforce constraint
+  void enforceConstraint();
 
 };
 
