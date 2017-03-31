@@ -257,8 +257,9 @@ void
 Application::updateScene(float t)
 {
   if(world) {
-    updateConstraint(t);
+    //updateConstraint(t);
     world->stepSimulation(t);
+    checkCollisionEvents();
   }
 }
 
@@ -338,7 +339,7 @@ Application::addConstraint(Object * object, btVector3 position)
   world->addConstraint(constraint, true);
 
   // define constraint parameters
-  float strength = 0.9;
+  float strength = 0;
   constraint->setParam(BT_CONSTRAINT_STOP_CFM, strength, 0);
   constraint->setParam(BT_CONSTRAINT_STOP_CFM, strength, 1);
   constraint->setParam(BT_CONSTRAINT_STOP_CFM, strength, 2);
@@ -346,7 +347,7 @@ Application::addConstraint(Object * object, btVector3 position)
   constraint->setParam(BT_CONSTRAINT_STOP_CFM, strength, 4);
   constraint->setParam(BT_CONSTRAINT_STOP_CFM, strength, 5);
 
-  float erp = 0.5;
+  float erp = 0;
   constraint->setParam(BT_CONSTRAINT_STOP_ERP, erp, 0);
   constraint->setParam(BT_CONSTRAINT_STOP_ERP, erp, 1);
   constraint->setParam(BT_CONSTRAINT_STOP_ERP, erp, 2);
@@ -354,22 +355,91 @@ Application::addConstraint(Object * object, btVector3 position)
   constraint->setParam(BT_CONSTRAINT_STOP_ERP, erp, 4);
   constraint->setParam(BT_CONSTRAINT_STOP_ERP, erp, 5);
 
-  //
-
   constraints.push_back(constraint);
 }
 
 void
 Application::updateConstraint(float t)
 {
-  // if (t > 2 && t < 2.05)
-  //   constraints[0]->getFrameOffsetA().setOrigin(btVector3(0,10,0));
+  // if(t > 2.5) {
+    //  constraints[0]->getFrameOffsetA().setOrigin(objects[1]->getRigidBody()->getCenterOfMassPosition() + btVector3(0,10*t,0));
+  // }
 }
 
 void
 Application::enforceConstraint()
 {
-  //addConstraint(objects[1], btVector3(0,50,0));
-  objects[1]->getRigidBody()->setLinearVelocity(btVector3(10, 30, 0));
+  //addConstraint(objects[1], objects[1]->getRigidBody()->getCenterOfMassPosition());
+  objects[1]->getRigidBody()->setLinearVelocity(btVector3(20, 30, 0));
   objects[2]->getRigidBody()->setLinearVelocity(btVector3(-10, 30, 0));
+  objects[1]->getRigidBody()->setAngularVelocity(btVector3(0, 0, -1));
+  objects[2]->getRigidBody()->setAngularVelocity(btVector3(0, 0, 1));
+}
+
+/*
+  >-------- Collision Events ---------<
+*/
+void
+Application::checkCollisionEvents()
+{
+  CollisionPairs currentPairs;
+
+  // check for all manifolds
+  for(int i = 0; i < dispatcher->getNumManifolds(); i++) {
+    btPersistentManifold * manifold = dispatcher->getManifoldByIndexInternal(i);
+
+    // ignore objects with no contact points
+    if(manifold->getNumContacts() <= 0){
+      continue;
+    }
+
+    // bodies involved in collision
+    const btRigidBody * body0 = static_cast<const btRigidBody *>(manifold->getBody0());
+    const btRigidBody * body1 = static_cast<const btRigidBody *>(manifold->getBody1());
+
+    // sort them
+    bool const swappedFlag = body0 > body1;
+    const btRigidBody * sortedBody0 = swappedFlag ? body1 : body0;
+    const btRigidBody * sortedBody1 = swappedFlag ? body0 : body1;
+
+    // insert in set
+    CollisionPair currentPair = make_pair(sortedBody0, sortedBody1);
+    currentPairs.insert(currentPair);
+
+    if(collisionPairs.find(currentPair) == collisionPairs.end()) {
+      collisionEvent((btRigidBody *) body0, (btRigidBody *) body1);
+    }
+  }
+
+  // separation event
+  CollisionPairs removedPairs;
+
+  set_difference(collisionPairs.begin(), collisionPairs.end(),
+                 currentPairs.begin(), currentPairs.end(),
+                 inserter(removedPairs, removedPairs.begin()));
+
+  for(CollisionPairs::const_iterator itr = removedPairs.begin();
+      itr != removedPairs.end(); itr++) {
+    separationEvent((btRigidBody *)itr->first, (btRigidBody *)itr->second);
+  }
+
+  collisionPairs = currentPairs;
+}
+
+void
+Application::collisionEvent(btRigidBody * body0, btRigidBody * body1)
+{
+  //btVector3 linearVelocity0 = body0->getLinearVelocity();
+  //btVector3 linearVelocity1 = body1->getLinearVelocity();
+
+  //body0->applyCentralForce(btVector3(-30, 10, 0));
+  //body1->applyCentralForce(btVector3(30, 10, 0));
+
+  //cout << "LinearVelocity0: " << linearVelocity0[0] << " " << linearVelocity0[1] << " " << linearVelocity0[2] << endl;
+  //cout << "LinearVelocity1: " << linearVelocity1[0] << " " << linearVelocity1[1] << " " << linearVelocity1[2] << endl;
+}
+
+void
+Application::separationEvent(btRigidBody * body0, btRigidBody * body1)
+{
 }

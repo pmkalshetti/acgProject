@@ -28,7 +28,7 @@ public:
     state = new OpenGLMotionState(transform);
 
     btVector3 inertia(0,0,0);
-    if (abs(mass) < 0.0001) {
+    if (mass != 0.0f) {
       shape->calculateLocalInertia(mass, inertia);
     }
 

@@ -6,10 +6,15 @@
 #include "Object.h"
 #include <iostream>
 #include <vector>
+#include <set>
+#include <iterator>
+#include <algorithm>
 using namespace std;
 
 typedef vector<Object *> Objects;
 typedef vector<btGeneric6DofConstraint *> Constraints;
+typedef pair<const btRigidBody *, const btRigidBody *> CollisionPair;
+typedef set<CollisionPair> CollisionPairs;
 
 class Application {
 
@@ -78,6 +83,7 @@ private:
   btClock clock;
   Objects objects;
   Constraints constraints;
+  CollisionPairs collisionPairs;
 
 public:
   // initialize physics engine
@@ -100,6 +106,11 @@ public:
 
   // enforce constraint
   void enforceConstraint();
+
+  // collision events
+  void checkCollisionEvents();
+  void collisionEvent(btRigidBody * body0, btRigidBody * body1);
+  void separationEvent(btRigidBody * body0, btRigidBody * body1);
 
 };
 
