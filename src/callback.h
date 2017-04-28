@@ -49,7 +49,7 @@ void initApp(int argc, char ** argv, Application & app)
   glutCreateWindow("CS 775: Rigid Body Motion");
   glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
 
-  globalApp->initializeScene();
+  globalApp->initializeScene(argc, argv);
 
   // set static callbacks
   glutKeyboardFunc(keyboardCallback);
