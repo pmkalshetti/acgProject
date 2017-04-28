@@ -55,7 +55,7 @@ public:
   Application();
 
   // inititalize application - lighting and objects
-  void initializeScene();
+  void initializeScene(int argc, char ** argv);
 
   // accessor functions
   int getWindowHeight() {return windowHeight;}
@@ -87,10 +87,10 @@ private:
 
 public:
   // initialize physics engine
-  void initializePhysics();
+  void initializePhysics(int argc, char ** argv);
 
   // create objects for simulation
-  void createObjects();
+  void createObjects(const btVector3 & obj1Pos, const btVector3 & obj2Pos);
 
   // create object in physics world
   Object * createObject(btCollisionShape * shape, const float & mass,
