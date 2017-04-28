@@ -25,7 +25,7 @@ Application::Application() :
   >------ initialize lighting and objects in scene ------<
 */
 void
-Application::initializeScene()
+Application::initializeScene(int argc, char ** argv)
 {
   // light parameters
   GLfloat ambient[] = {0.2, 0.2, 0.2, 1};
@@ -52,7 +52,7 @@ Application::initializeScene()
 
   glClearColor(0.6, 0.65, 0.85, 0);
 
-  initializePhysics();
+  initializePhysics(argc, argv);
 }
 
 /*
@@ -267,15 +267,18 @@ Application::updateScene(float t)
   >-------------- initialize Physics Engine ----------------<
 */
 void
-Application::initializePhysics()
+Application::initializePhysics(int argc, char ** argv)
 {
   collisionConfiguration = new btDefaultCollisionConfiguration();
   dispatcher = new btCollisionDispatcher(collisionConfiguration);
   broadPhase = new btDbvtBroadphase();
   solver = new btSequentialImpulseConstraintSolver();
   world = new btDiscreteDynamicsWorld(dispatcher, broadPhase, solver, collisionConfiguration);
-
-  createObjects();
+  
+  btVector3 obj1Pos(argv[1], argv[2], argv[3]);
+  btVector3 obj2Pos(argv[4], argv[5], argv[6]);
+	
+  createObjects(obj1Pos, obj2Pos);
   enforceConstraint();
 }
 
@@ -283,7 +286,7 @@ Application::initializePhysics()
   >------------- Create Objects for Simulation ----------------<
 */
 void
-Application::createObjects()
+Application::createObjects(const btVector3 & obj1Pos, const btVector3 & obj2Pos)
 {
   // ground plane
   createObject(new btBoxShape(btVector3(1, 50, 50)), 0,
@@ -291,11 +294,11 @@ Application::createObjects()
 
   // object 1
   createObject(new btBoxShape(btVector3(1,1,1)), 1,
-               btVector3(1, 0.2, 0.2), btVector3(-40, 30, 0));
+               btVector3(1, 0.2, 0.2), obj1Pos);
 
   // object 2
   createObject(new btBoxShape(btVector3(1,1,1)), 1,
-               btVector3(0, 0.2, 0.8), btVector3(40, 30, 0));
+               btVector3(0, 0.2, 0.8), obj2Pos);
 
 
 }
